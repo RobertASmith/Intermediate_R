@@ -253,7 +253,7 @@ miles_to_km(60)
 
 Coding principle: never write code more than once! This is the main principle of building packages in R. People use existing functions, combine and adjust them, and thereby create new functions. There are functions to do all kinds of things including calculating mortality risk from a vector of characteristics, plotting data in a template plot to ensure consistency, running simulations for a baseline, then treatment group.
 
-## If statements ---- 
+## If statements
 
 If statements check whether a condition is met, and if true executes some command, if not true then the command is not executed. For example, if the statement within the brackets (1+1 == 2) is TRUE, then the if-function will print "This statement is true". If the statement is not satisfied, then nothing happens, as shown in the second example below:
 
@@ -467,7 +467,7 @@ for(col in 1:dim(mtcars)[2]){
 col_means
 ```
 
-## Nested loops ----- 
+## Nested loops
 As with functions it is entirely possible to nest loops. in the example below we nest the loops 1-3 for i and j. Don't worry too much about *cat*, the function simply prints and obeys the operations in the brackets. We get 3*3 = 9 rows.
 
 Example 1
@@ -497,9 +497,9 @@ for(hat in hats){
 possible_combinations
 ```
 
-# EXERCISE: putting it all together
+### Exercise
 
-## Questions
+#### Questions
 
  1. create a function roll_dice that gives you ONE random number
  between 1 and 6. Use the function sample() for that (set the parameter n = 1).  
@@ -513,7 +513,7 @@ possible_combinations
  4. take the loop from 3, and only count the throws that 
  show a 1 (ignore 2,3,4 and 5), and stop when 6.  
 
-## Solutions
+#### Solutions
 
 Soluation 1
 ```{r,echo=TRUE}
@@ -565,4 +565,111 @@ while(!isSix){
 }
   rollCounter
 ``` 
+
+## Apply family...
+
+### lapply
+ We are going to use an inbuild dataset called *airquality*.
+ 
+```{r,echo=TRUE}
+head(airquality)
+
+``` 
+We want to know the class of each variable (i.e. Ozone, Solar.R, Wind). If we just use the command *class(airquality)* we find that airquality is a dataframe (not really what we want to know).
+
+However, lapply, takes a list of inputs, applies a function to each of the things in the list, and returns a list of the function output. Since a dataframe is a list of vectors (mind-blown) the lapply function will take each vector, perform some function, then return the output in list format.  
+```{r,echo=TRUE}
+class(airquality) # the class is data-frame, not really what we want.
+
+as.list(airquality) # the air quality dataset is a list of vectors.
+
+lapply(airquality, class) # lapply returns a list of classes (one for each vector).
+``` 
+
+However this is quite messy (a list). We can simplify things with sapply.
+
+### sapply
+Sapply looks at the output of lapply, and if the outputs are all the same length then it uses those outputs to create a matrix (if length = 1 then a vector).
+
+```{r,echo=TRUE}
+
+sapply(airquality,class)   # in this case the output is a vector.
+
+``` 
+
+Class is a boring function, we are able to do more interesting things. For example we can find the mean and the range of two of the variables. The range produces a minimum and maximum value for each variable (therefore a matrix).
+
+```{r,echo=TRUE}
+
+sapply(airquality[,c("Wind","Temp")],mean)   # in this case the output is a vector.
+
+sapply(airquality,range)   # Here we have a matrix (2 observations for each variable, min and max)
+
+temp <- sapply(airquality,range)
+class(temp)
+``` 
+
+Sometimes we are not able to use this cool ability of sapply. In the example below we want to find the unique values of every variable. Since these are different lengths sapply and lapply return the same output.
+
+```{r,echo=TRUE}
+
+unique_vals_s  <- sapply(airquality, unique)
+unique_vals_l  <- lapply(airquality, unique)
+
+# this line asks whether, for each variable, the number of unique in both methods is the same.
+sapply(unique_vals_s,length) == sapply(unique_vals_l,length)
+
+``` 
+
+We can use custom built functions within lapply and sapply. For example suppose we wanted to find the midpoint between the ranges, with NAs set to zero.
+
+```{r,echo=TRUE}
+library(dplyr)
+# head air quality
+head(airquality)
+# use a function within sapply and lapply. This function finds the mean of the range values (the mid-point)
+sapply(airquality,
+       function(data) mean(range(data,na.rm = T)))
+
+# this may look simpler (depending on your opinion) using pipes:
+sapply(airquality,
+       function(data) data %>% range(na.rm = T) %>% mean()
+      )
+``` 
+
+### vapply
+When we are working with a dataset one step at a time, we can see whether the output makes sense. However, when we have lapply, sapply etc in the middle of long section of code it may not result in the output we want, which would ruin further analysis. vapply allows us to identify problems and let us know by way of printing an error.
+
+In the example below lets carry on with our example from above:
+
+
+```{r,echo=TRUE}
+# as above
+sapply(airquality,
+       function(data) mean(range(data,na.rm = T)))
+
+# This is a vector of legnth 1 for each.
+
+vapply(X = airquality,    # object used
+       FUN = function(data) mean(range(data,na.rm = T)), # function to apply to each list
+       FUN.VALUE = numeric(1)) # output format- in this case numeric with 1 value for each.
+
+```
+
+### tapply
+If we want to split data into groups depending on a variable (e.g. male/female, retired/not retired) then apply a function to those from each group we can use tapply.
+
+Notice how the airquality dataset has the day and month. If we wanted to see the mean temperature by month we could do this simply using the tapply function. In the example below tapply has three inputs, the vector of temperatures, vector of months, and the function mean().
+
+```{r,echo=TRUE}
+head(airquality)
+
+tapply(airquality$Temp,  # Temperature variable
+       airquality$Month, # Month (using to group by)
+       mean              # Function using, could easily use min/max instead. 
+       )
+
+```
+
+## Long & Wide Data
 
